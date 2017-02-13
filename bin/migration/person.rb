@@ -7,27 +7,33 @@ def start
   person_name_insert_statement += "middle_name, family_name_prefix, family_name, family_name2, family_name_suffix, degree, creator, "
   person_name_insert_statement += "date_created, voided, voided_by, date_voided, void_reason, changed_by, date_changed, uuid) VALUES "
 
-  person_address_insert_statement = "INSERT INTO person_address (person_address_id, person_id, preferred, address1, address2, city_village,"
+  person_address_insert_statement =  "INSERT INTO person_address (person_address_id, person_id, preferred, address1, address2, city_village,"
   person_address_insert_statement += "state_province, postal_code, country, latitude, longitude, creator, date_created, voided,   voided_by, "
   person_address_insert_statement += "date_voided, void_reason, county_district, neighborhood_cell, region, subregion, township_division, uuid) VALUES "
 
-  person_attribute_insert_statement = "INSERT INTO person_attribute (person_attribute_id,person_id,value,person_attribute_type_id,creator,date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,uui) VALUES "
+  person_attribute_insert_statement =  "INSERT INTO person_attribute (person_attribute_id,person_id,value,person_attribute_type_id,creator,"
+  person_attribute_insert_statement += "date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,uui) VALUES "
 
   patient_insert_statement = "INSERT INTO patient (patient_id,tribe,creator,date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason) VALUES "
 
+  patient_program_sql =  "INSERT INTO patient_program (patient_program_id,patient_id,program_id,date_enrolled,date_completed,"
+  patient_program_sql += "creator,date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,location_id,uuid) VALUES "
 
-  `cd #{File_destination} && touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql`
+
+  `cd #{File_destination} && touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql patient_program.sql`
   `echo -n '#{person_insert_statement}' >> #{File_destination}/person.sql`
   `echo -n '#{person_name_insert_statement}' >> #{File_destination}/person_name.sql`
   `echo -n '#{person_address_insert_statement}' >> #{File_destination}/person_address.sql`
   `echo -n '#{person_attribute_insert_statement}' >> #{File_destination}/person_attribute.sql`
   `echo -n '#{patient_insert_statement}' >> #{File_destination}/patient.sql`
+  `echo -n '#{patient_program_sql}' >> #{File_destination}/patient_program.sql`
 
   self.create_person
   self.create_person_name
   self.create_person_address
   self.create_person_attribute
   self.create_patient
+  self.create_patient_program
 
 end
 
@@ -224,4 +230,41 @@ EOF
     end
 end
 
+def self.create_patient_program 
+  patients = Patient.all
+  
+  patient_program_id = 1
+
+  patients.each do |patient|
+    patient_id = patient['patient_id']
+    date_enrolled = Date.today
+    date_completed = ""
+    date_created = patient['date_created']
+    changed_by = ""
+    date_changed = ""
+    voided = 0
+    voided_by = ""
+    date_voided = ""
+    location_id = ""
+    void_reason = ""
+    program_id = HtsProgram.find_by_name("HTS PROGRAM").program_id
+    creator = patient['creator']
+    
+    uuid = ActiveRecord::Base.connection.select_one <<EOF
+          select uuid();
+EOF
+
+    puts "Writing patient program ....................... #{patient_id}"
+
+    program_sql = "(\"#{patient_program_id}\",\"#{patient_id}\",\"#{program_id}\",\"#{date_enrolled}\",\"#{date_completed}\","
+    program_sql += "\"#{creator}\",\"#{date_created}\",\"#{changed_by}\",\"#{date_changed}\",\"#{voided}\",\"#{voided_by}\","
+    program_sql += "\"#{date_voided}\",\"#{void_reason}\",\"#{location_id}\",\"#{uuid.values.first}\"),"
+
+    `echo -n '#{program_sql}' >> #{File_destination}/patient_program.sql`
+
+    patient_program_id = patient_program_id + 1
+
+  end
+
+end
 start
