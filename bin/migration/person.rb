@@ -12,7 +12,7 @@ def start
   person_address_insert_statement += "date_voided, void_reason, county_district, neighborhood_cell, region, subregion, township_division, uuid) VALUES "
 
   person_attribute_insert_statement =  "INSERT INTO person_attribute (person_attribute_id,person_id,value,person_attribute_type_id,creator,"
-  person_attribute_insert_statement += "date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,uui) VALUES "
+  person_attribute_insert_statement += "date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,uuid) VALUES "
 
   patient_insert_statement = "INSERT INTO patient (patient_id,tribe,creator,date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason) VALUES "
 
@@ -54,23 +54,48 @@ EOF
     person_dead = person['dead'] ? 1 : 0
     person_death_date = person['death_date'].blank? ? 'null' : person['death_date']
     person_cause_of_death = person['cause_of_death'].blank? ? 'null' : person['cause_of_death']
-    person_creator = person['creator'].blank? ? 'null' : person['creator']
-    person_date_created = person['date_created'].blank? ? 'null' : person['date_created']
-    person_changed_by = person['changed_by'].blank? ? 'null' : person['changed_by']
     person_date_changed = person['date_changed'].blank? ? 'null' : person['date_changed']
+    person_changed_by = person['changed_by']
+    person_creator = person['creator']
+    person_date_created = person['date_created'].blank? ? 'null' : person['date_created']
+    person_voided_by = person['voided_by']
     person_voided = person['voided'] ? 1 : 0
-    person_voided_by = person['voided_by'].blank? ? 'null' : person['voided_by']
     person_date_voided = person['date_voided'].blank? ? 'null' : person['date_voided']
     person_voided_reason = person['void_reason'].blank? ? 'null' : person['void_reason']
+
+    if !person_creator.blank?
+      creator = HtsUser.find_by_user_id(person['creator'])
+      person_creator = creator.blank? ? 1 : creator.user_id
+    else
+      person_creator = 'null'
+    end
+
+
+    if !person_changed_by.blank?
+      changed_by = HtsUser.find_by_user_id(person['changed_by'])
+      person_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    else 
+      person_changed_by = 'null'
+    end
+
+    if !person_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(person['voided_by'])
+      person_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      person_voided_by = 'null'
+    end
 
     puts "Writing person >>>>>>>>> #{person['person_id']}"
 
     person_insert_sql = "(#{person_id},\"#{person_gender}\",\"#{person_birthdate}\",\"#{person_birthdate_estimated}\","
-    person_insert_sql += "\"#{person_dead}\",\"#{person_death_date}\",\"#{person_cause_of_death}\",\"#{person_creator}\","
-    person_insert_sql += "\"#{person_date_created}\",\"#{person_changed_by}\",\"#{person_date_changed}\",\"#{person_voided}\","
-    person_insert_sql += "\"#{person_voided_by}\",\"#{person_date_voided}\",\"#{person_voided_reason}\",\"#{uuid.values.first}\"),"   
+    person_insert_sql += "\"#{person_dead}\",\"#{person_death_date}\",#{person_cause_of_death},#{person_creator},"
+    person_insert_sql += "\"#{person_date_created}\",#{person_changed_by},\"#{person_date_changed}\",\"#{person_voided}\","
+    person_insert_sql += "#{person_voided_by},\"#{person_date_voided}\",\"#{person_voided_reason}\",\"#{uuid.values.first}\"),"   
 
-    `echo -n '#{person_insert_sql}' >> #{File_destination}/person.sql`
+    if person_id != 1
+      `echo -n '#{person_insert_sql}' >> #{File_destination}/person.sql`
+    end
+
   end
 end
 
@@ -103,16 +128,41 @@ EOF
     person_name_void_reason = person_name['void_reason']
     person_name_changed_by = person_name['changed_by']
     person_name_date_changed = person_name['date_changed']
+    
+    if !person_name_creator.blank?
+      creator = HtsUser.find_by_user_id(person_name['creator'])
+      person_name_creator = creator.blank? ? 1 : creator.user_id
+    else
+      person_name_creator = 'null'
+    end
+
+
+    if !person_name_changed_by.blank?
+      changed_by = HtsUser.find_by_user_id(person_name['changed_by'])
+      person_name_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    else 
+      person_name_changed_by = 'null'
+    end
+
+    if !person_name_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(person_name['voided_by'])
+      person_name_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      person_name_voided_by = 'null'
+    end
+
 
     puts "Writing person name ############ #{person_name_id}"
 
     person_name_insert_sql = "(#{person_name_id},\"#{person_name_preferred}\",\"#{person_name_person_id}\",\"#{person_name_prefix}\",\"#{person_name_gname}\","
     person_name_insert_sql += "\"#{person_name_mname}\",\"#{person_name_fname_prefix}\",\"#{person_name_fname}\",\"#{person_name_fname2}\","
-    person_name_insert_sql += "\"#{person_name_fname_suffix}\",\"#{person_name_degree}\",\"#{person_name_creator}\",\"#{person_name_date_created}\","
-    person_name_insert_sql += "\"#{person_name_voided}\",\"#{person_name_voided_by}\",\"#{person_name_date_voided}\", \"#{person_name_void_reason}\","
-    person_name_insert_sql += "\"#{person_name_changed_by}\",\"#{person_name_date_changed}\",\"#{uuid.values.first}\"),"
+    person_name_insert_sql += "\"#{person_name_fname_suffix}\",\"#{person_name_degree}\",#{person_name_creator},\"#{person_name_date_created}\","
+    person_name_insert_sql += "\"#{person_name_voided}\",#{person_name_voided_by},\"#{person_name_date_voided}\", \"#{person_name_void_reason}\","
+    person_name_insert_sql += "#{person_name_changed_by},\"#{person_name_date_changed}\",\"#{uuid.values.first}\"),"
 
-    `echo -n '#{person_name_insert_sql}' >> #{File_destination}/person_name.sql`
+    if person_name_person_id != 1
+      `echo -n '#{person_name_insert_sql}' >> #{File_destination}/person_name.sql`
+    end
 
   end
 
@@ -151,17 +201,40 @@ EOF
     person_address_subregion = person_address['address5']
     person_address_township_division = person_address['address4']
 
+    if !person_address_person_id.blank?
+      person_id = HtsPerson.find_by_person_id(person_address['person_id'])
+      person_address_person_id = person_id.blank? ? 'null' : person_id.person_id
+    else
+      person_addess_person_id = 'null'
+    end
+
+    if !person_address_creator.blank?
+      creator = HtsUser.find_by_user_id(person_address['creator'])
+      person_address_creator = creator.blank? ? 1 : creator.user_id
+    else
+      person_addess_creator = 'null'
+    end
+
+    if !person_address_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(person_address['voided_by'])
+      person_address_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      person_address_voided_by = 'null'
+    end
+
     puts "Writing person address ////////////////// #{person_address_id}"
 
     person_address_insert_sql = "(#{person_address_id},\"#{person_address_person_id}\",\"#{person_address_preferred}\",\"#{person_address_address1}\","
     person_address_insert_sql += "\"#{person_address_address2}\",\"#{person_address_city_village}\",\"#{person_address_state_province}\","
     person_address_insert_sql += "\"#{person_address_postal_code}\",\"#{person_address_country}\",\"#{person_address_latitude}\","
-    person_address_insert_sql += "\"#{person_address_longitude}\",\"#{person_address_creator}\",\"#{person_address_date_created}\",\"#{person_address_voided}\","
-    person_address_insert_sql += "\"#{person_address_voided_by}\",\"#{person_address_date_voided}\",\"#{person_address_void_reason}\","
+    person_address_insert_sql += "\"#{person_address_longitude}\",#{person_address_creator},\"#{person_address_date_created}\",\"#{person_address_voided}\","
+    person_address_insert_sql += "#{person_address_voided_by},\"#{person_address_date_voided}\",\"#{person_address_void_reason}\","
     person_address_insert_sql += "\"#{person_address_county_district}\",\"#{person_address_neighborhood_cell}\",\"#{person_address_region}\","
     person_address_insert_sql += "\"#{person_address_subregion}\",\"#{person_address_township_division}\",\"#{uuid.values.first}\"),"
-
-    `echo -n '#{person_address_insert_sql}' >> #{File_destination}/person_address.sql`
+    
+    if person_address_person_id != 1 && person_address_person_id != 'null'
+      `echo -n '#{person_address_insert_sql}' >> #{File_destination}/person_address.sql`
+    end
 
   end
 end
@@ -170,13 +243,21 @@ def self.create_person_attribute
 
   persons_attributes = PersonAttribute.all
 
+  last_hts_person_attr = HtsPersonAttribute.last
+  if !last_hts_person_attr.blank?
+    last_hts_attr_id = last_hts_person_attr.person_attribute_id.to_i + 1
+  else
+    last_hts_attr_id = 1
+  end
+
   persons_attributes.each do |person_attribute|
 
     uuid = ActiveRecord::Base.connection.select_one <<EOF
           select uuid();
 EOF
 
-    person_attribute_id = person_attribute['person_attribute_id']
+
+    person_attribute_id = last_hts_attr_id
     person_attribute_person_id = person_attribute['person_id'] 
     person_attribute_value = person_attribute['value']
     person_attribute_type_id = person_attribute['person_attribute_type_id']
@@ -189,15 +270,43 @@ EOF
     person_attribute_date_voided = person_attribute['date_voided']
     person_attribute_void_reason = person_attribute['void_reason']
 
+    if !person_attribute_person_id.blank?
+      person_id = HtsPerson.find_by_person_id(person_attribute['person_id'])
+      person_attribute_person_id = person_id.blank? ? 'null' : person_id.person_id
+    else
+      person_attribute_person_id = 'null'
+    end
+
+    if !person_attribute_creator.blank?
+      creator = HtsUser.find_by_user_id(person_attribute['creator'])
+      person_attribute_creator = creator.blank? ? 1 : creator.user_id
+    else
+      person_attribute_creator = 'null'
+    end
+
+    if !person_attribute_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(person_attribute['voided_by'])
+      person_attribute_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      person_attribute_voided_by = 'null'
+    end
+
+    if !person_attribute_changed_by.blank?
+      changed_by = HtsUser.find_by_user_id(person_attribute['changed_by'])
+      person_attribute_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    else 
+      person_attribute_changed_by = 'null'
+    end
+
     puts "Writing person attributes  |||||||||||||||||||||| #{person_attribute_id}"
 
-    person_attr_insert_sql = "(\"#{person_attribute_id}\",\"#{person_attribute_person_id}\",\"#{person_attribute_value}\","
-    person_attr_insert_sql += "\"#{person_attribute_type_id}\",\"#{person_attribute_creator}\",\"#{person_attribute_date_created}\","
-    person_attr_insert_sql += "\"#{person_attribute_changed_by}\",\"#{person_attribute_date_changed}\",\"#{person_attribute_voided}\","
-    person_attr_insert_sql += "\"#{person_attribute_voided_by}\",\"#{person_attribute_date_voided}\",\"#{person_attribute_void_reason}\",\"#{uuid.values.first}\"),"
-
-    `echo -n '#{person_attr_insert_sql}' >> #{File_destination}/person_attribute.sql`
-
+    person_attr_insert_sql =<<EOF 
+    (#{person_attribute_id},\"#{person_attribute_person_id}\",\"#{person_attribute_value}\",\"#{person_attribute_type_id}\",#{person_attribute_creator},\"#{person_attribute_date_created}\",#{person_attribute_changed_by},\"#{person_attribute_date_changed}\",\"#{person_attribute_voided}\",#{person_attribute_voided_by},\"#{person_attribute_date_voided}\",\"#{person_attribute_void_reason}\",\"#{uuid.values.first}\"),
+EOF
+    if person_attribute_person_id != 1 && person_attribute_person_id != 'null'
+      `echo -n '#{person_attr_insert_sql}' >> #{File_destination}/person_attribute.sql`
+    end
+    last_hts_attr_id = last_hts_attr_id + 1
   end
 end
 
@@ -211,7 +320,7 @@ def self.create_patient
 EOF
 
     patient_id = patient['patient_id']
-    patient_tribe = patient ['tribe'] 
+    patient_tribe = patient['tribe'].blank? ? 'null' : patient['tribe']
     patient_creator = patient['creator'] 
     patient_date_created = patient['date_created'] 
     patient_changed_by = patient['changed_by']   
@@ -221,12 +330,43 @@ EOF
     patient_date_voided = patient['date_voided']   
     patient_void_reason = patient['void_reason'] 
 
+    if !patient_id.blank?
+      person_id = HtsPerson.find_by_person_id(patient['patient_id'])
+      patient_id = person_id.blank? ? 'null' : person_id.person_id
+    else
+      patient_id = 'null'
+    end
+
+    if !patient_creator.blank?
+      creator = HtsUser.find_by_user_id(patient['creator'])
+      patient_creator = creator.blank? ? 1 : creator.user_id
+    else
+      patient_creator = 'null'
+    end
+
+    if !patient_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(patient['voided_by'])
+      patient_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      patient_voided_by = 'null'
+    end
+
+    if !patient_changed_by.blank?
+      changed_by = HtsUser.find_by_user_id(patient['changed_by'])
+      patient_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    else 
+      patient_changed_by = 'null'
+    end
+
     puts "Writing patient  +++++++++++++++++++++ #{patient_id}"
 
-    patient_insert_sql = "(\"#{patient_id}\",\"#{patient_tribe}\",\"#{patient_creator}\",\"#{patient_date_created}\",\"#{patient_changed_by}\","
-    patient_insert_sql += "\"#{patient_date_changed}\",\"#{patient_voided}\",\"#{patient_voided_by}\",\"#{patient_date_voided}\",\"#{patient_void_reason}\"),"
+    patient_insert_sql = "(#{patient_id},#{patient_tribe},#{patient_creator},\"#{patient_date_created}\",#{patient_changed_by},"
+    patient_insert_sql += "\"#{patient_date_changed}\",\"#{patient_voided}\",#{patient_voided_by},\"#{patient_date_voided}\",\"#{patient_void_reason}\"),"
 
-    `echo -n '#{patient_insert_sql}' >> #{File_destination}/patient.sql`
+    if patient_id != 1 && patient_id != 'null'
+      `echo -n '#{patient_insert_sql}' >> #{File_destination}/patient.sql`
+    end
+
     end
 end
 
@@ -240,15 +380,43 @@ def self.create_patient_program
     date_enrolled = Date.today
     date_completed = ""
     date_created = patient['date_created']
-    changed_by = ""
+    patient_program_changed_by = patient['changed_by']
     date_changed = ""
     voided = 0
-    voided_by = ""
+    patient_program_voided_by = ""
     date_voided = ""
     location_id = ""
     void_reason = ""
     program_id = HtsProgram.find_by_name("HTS PROGRAM").program_id
-    creator = patient['creator']
+    patient_program_creator = patient['creator']
+
+    if !patient_id.blank?
+      person_id = HtsPerson.find_by_person_id(patient['patient_id'])
+      patient_id = person_id.blank? ? 'null' : person_id.person_id
+    else
+      patient_id = 'null'
+    end
+
+    if !patient_program_creator.blank?
+      creator = HtsUser.find_by_user_id(patient['creator'])
+      patient_program_creator = creator.blank? ? 1 : creator.user_id
+    else
+      patient_program_creator = 'null'
+    end
+
+    if !patient_program_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(patient['voided_by'])
+      patient_program_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      patient_program_voided_by = 'null'
+    end
+
+    if !patient_program_changed_by.blank?
+      changed_by = HtsUser.find_by_user_id(patient['changed_by'])
+      patient_program_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    else 
+      patient_program_changed_by = 'null'
+    end
     
     uuid = ActiveRecord::Base.connection.select_one <<EOF
           select uuid();
@@ -256,9 +424,9 @@ EOF
 
     puts "Writing patient program ....................... #{patient_id}"
 
-    program_sql = "(\"#{patient_program_id}\",\"#{patient_id}\",\"#{program_id}\",\"#{date_enrolled}\",\"#{date_completed}\","
-    program_sql += "\"#{creator}\",\"#{date_created}\",\"#{changed_by}\",\"#{date_changed}\",\"#{voided}\",\"#{voided_by}\","
-    program_sql += "\"#{date_voided}\",\"#{void_reason}\",\"#{location_id}\",\"#{uuid.values.first}\"),"
+    program_sql = "(\"#{patient_program_id}\",#{patient_id},#{program_id},\"#{date_enrolled}\",\"#{date_completed}\","
+    program_sql += "#{patient_program_creator},\"#{date_created}\",#{patient_program_changed_by},\"#{date_changed}\",\"#{voided}\","
+    program_sql += "#{patient_program_voided_by},\"#{date_voided}\",\"#{void_reason}\",\"#{location_id}\",\"#{uuid.values.first}\"),"
 
     `echo -n '#{program_sql}' >> #{File_destination}/patient_program.sql`
 
@@ -267,4 +435,5 @@ EOF
   end
 
 end
+
 start
