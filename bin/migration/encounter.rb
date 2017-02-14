@@ -84,6 +84,7 @@ def start
     enc_changed_by = encounter['changed_by']
     enc_date_changed = encounter['date_changed']
     enc_visit_id = encounter['visit_id']
+    patient_program_id = ''
 
     provider_id = 1
 
@@ -152,12 +153,19 @@ EOF
       obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
 
       `echo -n '#{obs_sql}' >> #{File_destination}/observations.sql`
+
+      patient_program = HtsPatientProgram.find_by_patient_id(person_id)
+      
+      if !patient_program.blank?
+        patient_program_id = patient_program.patient_program_id
+      end
+
     end
 
     enc_sql_statement =  "(\"#{enc_id}\",\"#{enc_type}\",\"#{enc_patient_id}\",\"#{provider_id}\",\"#{enc_location_id}\","
     enc_sql_statement += "\"#{enc_form_id}\",\"#{enc_datetime}\",\"#{enc_creator}\",\"#{enc_date_created}\",\"#{enc_voided}\","
     enc_sql_statement += "\"#{enc_voided_by}\",\"#{enc_date_voided}\",\"#{enc_void_reason}\",\"#{uuid.values.first}\","
-    enc_sql_statement += "\"#{enc_changed_by}\",\"#{enc_date_changed}\",\"#{patient_program_id = 1}\"),"
+    enc_sql_statement += "\"#{enc_changed_by}\",\"#{enc_date_changed}\",\"#{patient_program_id}\"),"
 
     `echo -n '#{enc_sql_statement}' >> #{File_destination}/encounters.sql`
 
