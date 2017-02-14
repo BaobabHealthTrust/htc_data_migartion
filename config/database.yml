@@ -14,7 +14,7 @@ default: &default
   encoding: utf8
   pool: 5
   username: root
-  password: pach321
+  password: root
   socket: /var/run/mysqld/mysqld.sock
 
 development:
@@ -25,14 +25,14 @@ htc_module:
   adapter: mysql2
   host: localhost
   username: root
-  password: pach321
+  password: root
   database: openmrs_1_9
 
 hts:
   adapter: mysql2
   host: localhost
   username: root
-  password: pach321
+  password: root
   database: htc1_7
 
 # Warning: The database defined as "test" will be erased and
