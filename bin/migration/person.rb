@@ -1,5 +1,9 @@
-File_destination = '~/'
+Script_started_at = Time.now
+File_destination = '/home/pachawo/'
+
+
 def start
+
   person_insert_statement = "INSERT INTO person (person_id, gender, birthdate, birthdate_estimated, dead, death_date, "
   person_insert_statement += "cause_of_death, creator, date_created, changed_by, date_changed, voided, voided_by, date_voided, void_reason, uuid) VALUES "
 
@@ -19,14 +23,17 @@ def start
   patient_program_sql =  "INSERT INTO patient_program (patient_program_id,patient_id,program_id,date_enrolled,date_completed,"
   patient_program_sql += "creator,date_created,changed_by,date_changed,voided,voided_by,date_voided,void_reason,location_id,uuid) VALUES "
 
+  patient_identifier_sql =  "INSERT INTO patient_identifier (patient_identifier_id,patient_id,identifier,identifier_type,preferred,"
+  patient_identifier_sql += "location_id,creator,date_created,voided,voided_by,date_voided,void_reason,uuid) VALUES "
 
-  `cd #{File_destination} && touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql patient_program.sql`
+  `cd #{File_destination} && touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql patient_program.sql patient_identifier.sql`
   `echo -n '#{person_insert_statement}' >> #{File_destination}/person.sql`
   `echo -n '#{person_name_insert_statement}' >> #{File_destination}/person_name.sql`
   `echo -n '#{person_address_insert_statement}' >> #{File_destination}/person_address.sql`
   `echo -n '#{person_attribute_insert_statement}' >> #{File_destination}/person_attribute.sql`
   `echo -n '#{patient_insert_statement}' >> #{File_destination}/patient.sql`
   `echo -n '#{patient_program_sql}' >> #{File_destination}/patient_program.sql`
+  `echo -n '#{patient_identifier_sql}' >> #{File_destination}/patient_identifier.sql`
 
   self.create_person
   self.create_person_name
@@ -34,7 +41,29 @@ def start
   self.create_person_attribute
   self.create_patient
   self.create_patient_program
+  self.create_patient_identifier
+  
+  puts "...............please wait............"
 
+  person_sql = File.read("#{File_destination}person.sql")[0...-1]
+  File.open("#{File_destination}person.sql", "w") {|sql| sql.puts person_sql << ";"}
+  
+  person_name_sql = File.read("#{File_destination}person_name.sql")[0...-1]
+  File.open("#{File_destination}person_name.sql", "w") {|sql| sql.puts person_name_sql << ";"}
+
+  person_address_sql = File.read("#{File_destination}person_address.sql")[0...-1]
+  File.open("#{File_destination}person_address.sql", "w") {|sql| sql.puts person_address_sql << ";"}
+
+  person_attr_sql = File.read("#{File_destination}person_attribute.sql")[0...-1]
+  File.open("#{File_destination}person_attribute.sql", "w") {|sql| sql.puts person_attr_sql << ";"}
+
+  patient_sql = File.read("#{File_destination}patient.sql")[0...-1]
+  File.open("#{File_destination}patient.sql", "w") {|sql| sql.puts patient_sql << ";"}
+
+  patient_id_sql = File.read("#{File_destination}patient_identifier.sql")[0...-1]
+  File.open("#{File_destination}patient_identifier.sql", "w") {|sql| sql.puts patient_id_sql << ";"}
+
+  puts "Script started at: #{Script_started_at} and ended at #{Time.now}"
 end
 
 def self.create_person
@@ -62,6 +91,19 @@ EOF
     person_voided = person['voided'] ? 1 : 0
     person_date_voided = person['date_voided'].blank? ? 'null' : person['date_voided']
     person_voided_reason = person['void_reason'].blank? ? 'null' : person['void_reason']
+
+    if person_gender == "Male" || person_gender == "M"
+
+      person_gender = "M"
+
+    elsif person_gender == "Female" || person_gender == "F"
+
+      person_gender = "F"
+
+    else
+
+      person_gender = "Unknown"
+    end
 
     if !person_creator.blank?
       creator = HtsUser.find_by_user_id(person['creator'])
@@ -431,6 +473,101 @@ EOF
     `echo -n '#{program_sql}' >> #{File_destination}/patient_program.sql`
 
     patient_program_id = patient_program_id + 1
+
+  end
+
+end
+
+def self.create_patient_identifier
+  
+  patient_identifiers = PatientIdentifier.all
+
+  last_hts_patient_identifier = HtsPatientIdentifier.last
+
+  last_hts_patient_identifier_id = last_hts_patient_identifier.blank? ? 0 : last_hts_patient_identifier.patient_identifier_id rescue nil
+
+  patient_identifiers.each do |patient_identifier|
+
+    patient_identifier_id = last_hts_patient_identifier_id.to_i + 1
+
+    patient_id = patient_identifier['patient_id']
+
+    identifier = patient_identifier['identifier']
+
+    identifier_type = patient_identifier['identifier_type']
+
+    preferred = patient_identifier['preferred'] ? 1 : 0
+
+    identifier_location_id = patient_identifier['location_id']
+
+    identifier_creator = patient_identifier['creator']
+
+    date_created = patient_identifier['date_created']
+
+    voided = patient_identifier['voided'] ? 1 : 0
+
+    identifier_voided_by = patient_identifier['voided_by']
+
+    date_voided = patient_identifier['date_voided']
+
+    void_reason = patient_identifier['void_reason']
+
+    uuid  = ActiveRecord::Base.connection.select_one <<EOF
+        select uuid()
+EOF
+
+
+    ########################## check if the patient exist ########################
+    if !patient_id.blank?
+      patient = Patient.find_by_patient_id(patient_id)
+      patient_id = patient.blank? ? 'null' : patient.patient_id
+    else 
+      patient_id = 'null'
+    end
+
+    #############################################################################
+
+    ######################## get HTS identifier type id #########################
+
+    htc_id_type = PatientIdentifierType.find_by_patient_identifier_type_id(identifier_type)
+    
+    if htc_id_type.name = "HTC Identifier"
+      id_type_name = "HTS Number"
+      identifier_type = HtsPatientIdentifierType.find_by_name(id_type_name).patient_identifier_type_id
+    end
+   
+    ###########################################################################
+    
+    if !identifier_creator.blank?
+      creator = HtsUser.find_by_user_id(identifier_creator)
+      identifier_creator = creator.blank? ? 1 : creator.user_id
+    else
+      identifier_creator = 1
+    end
+
+    if !identifier_voided_by.blank?
+      voided_by = HtsUser.find_by_user_id(identifier_voided_by)
+      identifier_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    else 
+      identifier_voided_by = 'null'
+    end
+
+    if !identifier_location_id.blank?
+      location = HtsLocation.find_by_location_id(identifier_location_id)
+      identifier_location_id = location.blank? ? 1 : location.location_id
+    else 
+      identifier_location_id = 1
+    end
+
+    puts "Writing patient identifier ========================= #{patient_id}"
+
+    sql =   "(#{patient_identifier_id},#{patient_id},\"#{identifier}\",#{identifier_type},#{preferred},#{identifier_location_id},"
+    sql +=  "#{identifier_creator},\"#{date_created}\",#{voided},#{identifier_voided_by},\"#{date_voided}\",\"#{void_reason}\",\"#{uuid.values.first}\"),"
+    
+
+    `echo -n '#{sql}' >> #{File_destination}/patient_identifier.sql`
+  
+    last_hts_patient_identifier_id = last_hts_patient_identifier_id.to_i + 1
 
   end
 
