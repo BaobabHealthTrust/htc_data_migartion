@@ -63,6 +63,9 @@ def start
   patient_id_sql = File.read("#{File_destination}patient_identifier.sql")[0...-1]
   File.open("#{File_destination}patient_identifier.sql", "w") {|sql| sql.puts patient_id_sql << ";"}
 
+  patient_prog_sql = File.read("#{File_destination}patient_program.sql")[0...-1]
+  File.open("#{File_destination}patient_program.sql", "w") {|sql| sql.puts patient_prog_sql << ";"}
+
   puts "Script started at: #{Script_started_at} and ended at #{Time.now}"
 end
 
@@ -134,7 +137,9 @@ EOF
     person_insert_sql += "\"#{person_date_created}\",#{person_changed_by},\"#{person_date_changed}\",\"#{person_voided}\","
     person_insert_sql += "#{person_voided_by},\"#{person_date_voided}\",\"#{person_voided_reason}\",\"#{uuid.values.first}\"),"   
 
-    if person_id != 1
+    person_exist = HtsPerson.find_by_person_id(person_id)
+
+    if person_exist.blank?
       `echo -n '#{person_insert_sql}' >> #{File_destination}/person.sql`
     end
 
@@ -201,8 +206,10 @@ EOF
     person_name_insert_sql += "\"#{person_name_fname_suffix}\",\"#{person_name_degree}\",#{person_name_creator},\"#{person_name_date_created}\","
     person_name_insert_sql += "\"#{person_name_voided}\",#{person_name_voided_by},\"#{person_name_date_voided}\", \"#{person_name_void_reason}\","
     person_name_insert_sql += "#{person_name_changed_by},\"#{person_name_date_changed}\",\"#{uuid.values.first}\"),"
+    
+    person = HtsPersonName.find_by_person_id(person_name_person_id)
 
-    if person_name_person_id != 1
+    if person.blank?
       `echo -n '#{person_name_insert_sql}' >> #{File_destination}/person_name.sql`
     end
 
@@ -243,13 +250,6 @@ EOF
     person_address_subregion = person_address['address5']
     person_address_township_division = person_address['address4']
 
-    if !person_address_person_id.blank?
-      person_id = HtsPerson.find_by_person_id(person_address['person_id'])
-      person_address_person_id = person_id.blank? ? 'null' : person_id.person_id
-    else
-      person_addess_person_id = 'null'
-    end
-
     if !person_address_creator.blank?
       creator = HtsUser.find_by_user_id(person_address['creator'])
       person_address_creator = creator.blank? ? 1 : creator.user_id
@@ -264,7 +264,7 @@ EOF
       person_address_voided_by = 'null'
     end
 
-    puts "Writing person address ////////////////// #{person_address_id}"
+    puts "Writing person address ////////////////// #{person_address_person_id}"
 
     person_address_insert_sql = "(#{person_address_id},\"#{person_address_person_id}\",\"#{person_address_preferred}\",\"#{person_address_address1}\","
     person_address_insert_sql += "\"#{person_address_address2}\",\"#{person_address_city_village}\",\"#{person_address_state_province}\","
@@ -274,8 +274,14 @@ EOF
     person_address_insert_sql += "\"#{person_address_county_district}\",\"#{person_address_neighborhood_cell}\",\"#{person_address_region}\","
     person_address_insert_sql += "\"#{person_address_subregion}\",\"#{person_address_township_division}\",\"#{uuid.values.first}\"),"
     
-    if person_address_person_id != 1 && person_address_person_id != 'null'
-      `echo -n '#{person_address_insert_sql}' >> #{File_destination}/person_address.sql`
+    person_exist = HtsPerson.find_by_person_id(person_address_person_id)
+    person_in_address = Person.find_by_person_id(person_address_person_id)
+    puts person_in_address.inspect
+
+    if person_exist.blank? && !person_in_address.blank?
+
+        `echo -n '#{person_address_insert_sql}' >> #{File_destination}/person_address.sql`
+
     end
 
   end
@@ -286,10 +292,15 @@ def self.create_person_attribute
   persons_attributes = PersonAttribute.all
 
   last_hts_person_attr = HtsPersonAttribute.last
+  
   if !last_hts_person_attr.blank?
+    
     last_hts_attr_id = last_hts_person_attr.person_attribute_id.to_i + 1
+  
   else
+    
     last_hts_attr_id = 1
+  
   end
 
   persons_attributes.each do |person_attribute|
@@ -298,58 +309,89 @@ def self.create_person_attribute
           select uuid();
 EOF
 
-
     person_attribute_id = last_hts_attr_id
+    
     person_attribute_person_id = person_attribute['person_id'] 
+    
     person_attribute_value = person_attribute['value']
+    
     person_attribute_type_id = person_attribute['person_attribute_type_id']
+    
     person_attribute_creator = person_attribute['creator']
+    
     person_attribute_date_created = person_attribute['date_created']
+    
     person_attribute_changed_by = person_attribute['changed_by']
+    
     person_attribute_date_changed = person_attribute['date_changed']
+    
     person_attribute_voided = person_attribute['voided'] ? 1 : 0
+    
     person_attribute_voided_by = person_attribute['voided_by']
+    
     person_attribute_date_voided = person_attribute['date_voided']
+    
     person_attribute_void_reason = person_attribute['void_reason']
 
-    if !person_attribute_person_id.blank?
-      person_id = HtsPerson.find_by_person_id(person_attribute['person_id'])
-      person_attribute_person_id = person_id.blank? ? 'null' : person_id.person_id
-    else
-      person_attribute_person_id = 'null'
-    end
-
+    
     if !person_attribute_creator.blank?
+      
       creator = HtsUser.find_by_user_id(person_attribute['creator'])
+      
       person_attribute_creator = creator.blank? ? 1 : creator.user_id
+    
     else
+      
       person_attribute_creator = 'null'
+    
     end
 
+    
     if !person_attribute_voided_by.blank?
+      
       voided_by = HtsUser.find_by_user_id(person_attribute['voided_by'])
+    
       person_attribute_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    
     else 
+      
       person_attribute_voided_by = 'null'
+    
     end
 
+    
     if !person_attribute_changed_by.blank?
+      
       changed_by = HtsUser.find_by_user_id(person_attribute['changed_by'])
+      
       person_attribute_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    
     else 
+      
       person_attribute_changed_by = 'null'
+    
     end
 
     puts "Writing person attributes  |||||||||||||||||||||| #{person_attribute_id}"
 
-    person_attr_insert_sql =<<EOF 
-    (#{person_attribute_id},\"#{person_attribute_person_id}\",\"#{person_attribute_value}\",\"#{person_attribute_type_id}\",#{person_attribute_creator},\"#{person_attribute_date_created}\",#{person_attribute_changed_by},\"#{person_attribute_date_changed}\",\"#{person_attribute_voided}\",#{person_attribute_voided_by},\"#{person_attribute_date_voided}\",\"#{person_attribute_void_reason}\",\"#{uuid.values.first}\"),
-EOF
-    if person_attribute_person_id != 1 && person_attribute_person_id != 'null'
+    person_attr_insert_sql = "(#{person_attribute_id},\"#{person_attribute_person_id}\,\"#{person_attribute_value}\","
+    person_attr_insert_sql += "\"#{person_attribute_type_id}\",#{person_attribute_creator},\"#{person_attribute_date_created}\","
+    person_attr_insert_sql += "#{person_attribute_changed_by},\"#{person_attribute_date_changed}\",\"#{person_attribute_voided}\","
+    person_attr_insert_sql += "#{person_attribute_voided_by},\"#{person_attribute_date_voided}\",\"#{person_attribute_void_reason}\","
+    person_attr_insert_sql += "\"#{uuid.values.first}\"),"
+
+    person_exist = HtsPerson.find_by_person_id(person_attribute_person_id)
+
+    if person_exist.blank?
+
       `echo -n '#{person_attr_insert_sql}' >> #{File_destination}/person_attribute.sql`
+    
     end
+    
     last_hts_attr_id = last_hts_attr_id + 1
+  
   end
+
 end
 
 def self.create_patient
@@ -373,7 +415,7 @@ EOF
     patient_void_reason = patient['void_reason'] 
 
     if !patient_id.blank?
-      person_id = HtsPerson.find_by_person_id(patient['patient_id'])
+      person_id = Person.find_by_person_id(patient['patient_id'])
       patient_id = person_id.blank? ? 'null' : person_id.person_id
     else
       patient_id = 'null'
@@ -433,7 +475,7 @@ def self.create_patient_program
     patient_program_creator = patient['creator']
 
     if !patient_id.blank?
-      person_id = HtsPerson.find_by_person_id(patient['patient_id'])
+      person_id = Person.find_by_person_id(patient['patient_id'])
       patient_id = person_id.blank? ? 'null' : person_id.person_id
     else
       patient_id = 'null'

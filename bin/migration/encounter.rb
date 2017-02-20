@@ -2,6 +2,7 @@ File_destination = '/home/pachawo/'
 Script_started_at = Time.now
 
 $location_id = HtsLocation.find_by_name("room 1").location_id
+
 $concept_map = {
     "HTC access type" => 'HTS Access type',
     "last hiv test" => 'Last HIV test',
@@ -55,23 +56,37 @@ $encounter_map = {
 def start
 
   obs_sql_statement =  "INSERT INTO obs (obs_id,person_id,concept_id,encounter_id,order_id,obs_datetime,"
+
   obs_sql_statement += "location_id,obs_group_id,accession_number,value_group_id,value_boolean,value_coded,"
+  
   obs_sql_statement += "value_coded_name_id,value_drug,value_datetime,value_numeric,value_modifier,value_text,"
+  
   obs_sql_statement += "date_started,date_stopped,comments,creator,date_created,voided,voided_by,date_voided,"
+  
   obs_sql_statement += "void_reason,value_complex,uuid) VALUES "
 
+  
   encounter_sql_statement =  "INSERT INTO encounter (encounter_id,encounter_type,patient_id,provider_id,location_id,"
+  
   encounter_sql_statement += "form_id,encounter_datetime,creator,date_created,voided,voided_by,date_voided,void_reason,"
+  
   encounter_sql_statement += "uuid,changed_by,date_changed,patient_program_id) VALUES "
 
+
   `cd #{File_destination} && touch observations.sql encounters.sql`
+
   `echo -n '#{obs_sql_statement}' >> #{File_destination}/observations.sql`
+  
   `echo -n '#{encounter_sql_statement}' >> #{File_destination}/encounters.sql`
 
+  
   self.create_encounters
+  
   self.create_hts_client_registration_encounter
 
+  
   puts "...............please wait............"
+  
   obs_sql = File.read("#{File_destination}observations.sql")[0...-1]
   File.open("#{File_destination}observations.sql", "w") {|sql| sql.puts obs_sql << ";"}
 
@@ -79,6 +94,7 @@ def start
   File.open("#{File_destination}encounters.sql", "w") {|sql| sql.puts enc_sql << ";"}
 
   puts "Script started at: #{Script_started_at} and ended at: #{Time.now}"
+
 end
 
 def self.create_encounters
@@ -88,57 +104,99 @@ def self.create_encounters
   encounters.each do |encounter|
 
     enc_id = encounter['encounter_id']
+   
     enc_type = encounter['encounter_type']
+   
     enc_patient_id = encounter['patient_id']
-    enc_location_id = encounter['location_id'].blank? ? 'null' : encounter['location_id']
+    
+    enc_location_id = $location_id
+    
     enc_form_id = encounter['form_id']
+    
     enc_datetime = encounter['encounter_datetime']
+    
     enc_creator = encounter['creator']
+    
     enc_date_created = encounter['date_created']
+    
     enc_voided = encounter['voided'] ? 1 : 0
+    
     enc_voided_by = encounter['voided_by']
+    
     enc_date_voided = encounter['date_voided']
+    
     enc_void_reason = encounter['void_reason']
+    
     enc_changed_by = encounter['changed_by']
+    
     enc_date_changed = encounter['date_changed']
+    
     enc_visit_id = encounter['visit_id']
+    
     patient_program_id = ''
 
+
     if !enc_creator.blank?
+      
       creator = HtsUser.find_by_user_id(enc_creator)
+      
       enc_creator = creator.blank? ? 1 : creator.user_id
+    
     else
+      
       enc_creator = 1
+    
     end
 
+    
     if !enc_form_id.blank?
+      
       form = HtsForm.find_by_form_id(enc_form_id)
+      
       enc_form_id = form.blank? ? 'null' : form.form_id
+    
     else 
+      
       enc_form_id = 'null'
+    
     end
     
+    
     if !enc_changed_by.blank?
+      
       changed_by = HtsUser.find_by_user_id(encounter['changed_by'])
+      
       enc_changed_by = changed_by.blank? ? 1 : changed_by.user_id
-    else 
+   
+   else 
+      
       enc_changed_by = 'null'
+    
     end
 
+    
     if !enc_voided_by.blank?
+      
       voided_by = HtsUser.find_by_user_id(encounter['voided_by'])
+      
       enc_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    
     else 
+      
       enc_voided_by = 'null'
+    
     end
 
+    
     hts_enc_type_ids = HtsEncounterType.find_by_sql("select * from htc1_7.encounter_type 
       where name in ('HIV TESTING','POST TEST COUNSELLING','HTS CLIENT REGISTRATION','PRE TEST COUNSELLING')")
 
     hts_enc_type_id_array = []
     
     hts_enc_type_ids.each do |enc_type|
+     
       hts_enc_type_id_array << enc_type.encounter_type_id
+    
     end
 
     provider_id = 1
@@ -152,90 +210,150 @@ EOF
     obs.each do |ob|
       
       obs_id = ob['obs_id']
+      
       person_id = ob['person_id']
+      
       obs_order_id = ob['order_id']
+      
       obs_datetime = ob['obs_datetime']
-      obs_location_id = ob['location_id'].blank? ? 'null' : ob['location_id']
+      
+      obs_location_id = $location_id
+      
       obs_group_id = ob['obs_group_id'].blank? ? 'null' : ob['obs_group_id']
+      
       accession_number = ob['accession_number']
+      
       value_group_id = ob['value_group_id'].blank? ? 'null' : ob['value_group_id']
+      
       value_boolean = ob['value_boolean']
+      
       value_coded_name_id = ob['value_coded_name_id']
+      
       value_drug = ob['value_drug'].blank? ? 'null' : ob['value_drug']
+      
       value_datetime = ob['value_datetime']
+      
       value_numeric = ob['value_numeric']
+      
       value_modifier = ob['value_modifier']
+      
       value_text = ob['value_text']
+      
       value_complex = ob['value_complex']
+      
       comments = ob['comments']
+      
       obs_creator = ob['creator']
+      
       date_created = ob['date_created']
+      
       voided = ob['voided'] ? 1 : 0
+      
       obs_voided_by = ob['voided_by']
+      
       date_voided = ob['date_voided']
+      
       value_coded = ob['value_coded']
+      
       concept_id = ob['concept_id']
 
+      
       if !value_coded_name_id.blank?
+        
         concept_name = HtsConceptName.find_by_concept_name_id(value_coded_name_id)
+        
         value_coded_name_id = concept_name.blank? ? 'null' : concept_name.concept_name_id
+      
       else
+        
         value_coded_name_id = 'null'
+      
       end
 
+      
       if !obs_order_id.blank?
+        
         order_id = HtsOrder.find_by_order_id(obs_order_id)
+        
         obs_order_id = order.blank? ? 'null' : order.order_id
+      
       else
+        
         obs_order_id = 'null'
+      
       end
     
+      
       if !obs_creator.blank?
+        
         creator = HtsUser.find_by_user_id(obs_creator)
+        
         obs_creator = creator.blank? ? 1 : creator.user_id
+      
       else
+        
         obs_creator = 1
+      
       end
 
+      
       if !obs_voided_by.blank?
+        
         voided_by = HtsUser.find_by_user_id(obs_voided_by)
+        
         obs_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+      
       else 
+        
         obs_voided_by = 'null'
+      
       end
 
-      if !obs_location_id.blank?
-        location = HtsLocation.find_by_location_id(obs_location_id)
-        obs_location_id = location.blank? ? 1 : location.location_id
-      else 
-        obs_location_id = 'null'
-      end
 
       if !value_coded.blank?
+        
         old_value_name = ConceptName.find_by_concept_id(value_coded).name rescue nil
+        
         new_value_name = $concept_map[old_value_name]
-        puts "pppppppppppppppppppppppppppppppppppppp#{new_value_name}"
+        
         value_coded = HtsConceptName.find_by_name(new_value_name).concept_id rescue nil
+
       end
 
       value_coded = value_coded.blank? ? 'null' : value_coded
 
+      
       if !concept_id.blank?
+        
         concept_name = ConceptName.find_by_concept_id(concept_id).name rescue nil
+        
         new_concept_name = $concept_map[concept_name]
+        
         concept_id = HtsConceptName.find_by_name(new_concept_name).concept_id rescue nil
+      
       else
+        
         concept_id = 'null'
+      
       end
 
+      
       if $encounter_map["PRE TEST COUNSELLING"].include? new_concept_name
+        
         enc_type = HtsEncounterType.find_by_name("PRE TEST COUNSELLING").encounter_type_id rescue nil
+      
       elsif $encounter_map["POST TEST COUNSELLING"].include? new_concept_name
+        
         enc_type = HtsEncounterType.find_by_name("POST TEST COUNSELLING").encounter_type_id
+      
       elsif $encounter_map["HTS CLIENT REGISTRATION"].include? new_concept_name
+        
         enc_type = HtsEncounterType.find_by_name("HTS CLIENT REGISTRATION").encounter_type_id
+      
       elsif $encounter_map["HIV TESTING"].include? new_concept_name
+        
         enc_type = HtsEncounterType.find_by_name("HIV TESTING").encounter_type_id
+      
       end
 
       uuid = ActiveRecord::Base.connection.select_one <<EOF
@@ -246,38 +364,55 @@ EOF
       if !concept_id.blank?
 
         obs_sql =  "(\"#{obs_id}\",#{person_id},#{concept_id},#{enc_id},#{obs_order_id},\"#{obs_datetime}\","
+        
         obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
+        
         obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
+        
         obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
+        
         obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
       
       end
 
       if hts_enc_type_id_array.include? enc_type
+        
         `echo -n '#{obs_sql}' >> #{File_destination}/observations.sql`
+      
       end
 
       patient_program = HtsPatientProgram.find_by_patient_id(person_id)
       
       if !patient_program.blank?
+        
         patient_program_id = patient_program.patient_program_id
+      
       end
 
 
       if !enc_type.blank? 
+        
         encounter_type = HtsEncounterType.find_by_encounter_type_id(enc_type)
+        
         enc_type = encounter_type.blank? ? 'null' : encounter_type.encounter_type_id
+      
       end
 
     end
 
     enc_sql_statement =  "(\"#{enc_id}\",\"#{enc_type}\",\"#{enc_patient_id}\",\"#{provider_id}\",#{enc_location_id},"
+    
     enc_sql_statement += "#{enc_form_id},\"#{enc_datetime}\",\"#{enc_creator}\",\"#{enc_date_created}\",\"#{enc_voided}\","
+    
     enc_sql_statement += "#{enc_voided_by},\"#{enc_date_voided}\",\"#{enc_void_reason}\",\"#{uuid.values.first}\","
+    
     enc_sql_statement += "#{enc_changed_by},\"#{enc_date_changed}\",\"#{patient_program_id}\"),"
 
+    
     if hts_enc_type_id_array.include? enc_type
+      
       `echo -n '#{enc_sql_statement}' >> #{File_destination}/encounters.sql`
+    
     end
 
   end
@@ -311,7 +446,7 @@ def self.create_hts_client_registration_encounter
       
     obs_group_id = 'null'
       
-    accession_number = 'null'
+    accession_number = ''
       
     value_group_id = 'null'
       
@@ -327,11 +462,11 @@ def self.create_hts_client_registration_encounter
       
     value_numeric = 'null'
       
-    value_modifier = 'null'
+    value_modifier = ''
       
     value_complex = 'null'
       
-    comments = 'null'
+    comments = ''
      
     obs_creator = '1'
     
