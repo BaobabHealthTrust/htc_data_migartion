@@ -153,11 +153,11 @@ def self.create_encounters
       
       form = HtsForm.find_by_form_id(enc_form_id)
       
-      enc_form_id = form.blank? ? 'null' : form.form_id
+      enc_form_id = form.blank? ? 'NULL' : form.form_id
     
     else 
       
-      enc_form_id = 'null'
+      enc_form_id = 'NULL'
     
     end
     
@@ -170,7 +170,7 @@ def self.create_encounters
    
    else 
       
-      enc_changed_by = 'null'
+      enc_changed_by = 'NULL'
     
     end
 
@@ -183,7 +183,7 @@ def self.create_encounters
     
     else 
       
-      enc_voided_by = 'null'
+      enc_voided_by = 'NULL'
     
     end
 
@@ -219,17 +219,17 @@ EOF
       
       obs_location_id = $location_id
       
-      obs_group_id = ob['obs_group_id'].blank? ? 'null' : ob['obs_group_id']
+      obs_group_id = ob['obs_group_id'].blank? ? 'NULL' : ob['obs_group_id']
       
       accession_number = ob['accession_number']
       
-      value_group_id = ob['value_group_id'].blank? ? 'null' : ob['value_group_id']
+      value_group_id = ob['value_group_id'].blank? ? 'NULL' : ob['value_group_id']
       
       value_boolean = ob['value_boolean']
       
       value_coded_name_id = ob['value_coded_name_id']
       
-      value_drug = ob['value_drug'].blank? ? 'null' : ob['value_drug']
+      value_drug = ob['value_drug'].blank? ? 'NULL' : ob['value_drug']
       
       value_datetime = ob['value_datetime']
       
@@ -262,11 +262,11 @@ EOF
         
         concept_name = HtsConceptName.find_by_concept_name_id(value_coded_name_id)
         
-        value_coded_name_id = concept_name.blank? ? 'null' : concept_name.concept_name_id
+        value_coded_name_id = concept_name.blank? ? 'NULL' : concept_name.concept_name_id
       
       else
         
-        value_coded_name_id = 'null'
+        value_coded_name_id = 'NULL'
       
       end
 
@@ -275,11 +275,11 @@ EOF
         
         order_id = HtsOrder.find_by_order_id(obs_order_id)
         
-        obs_order_id = order.blank? ? 'null' : order.order_id
+        obs_order_id = order.blank? ? 'NULL' : order.order_id
       
       else
         
-        obs_order_id = 'null'
+        obs_order_id = 'NULL'
       
       end
     
@@ -305,7 +305,7 @@ EOF
       
       else 
         
-        obs_voided_by = 'null'
+        obs_voided_by = 'NULL'
       
       end
 
@@ -320,7 +320,7 @@ EOF
 
       end
 
-      value_coded = value_coded.blank? ? 'null' : value_coded
+      value_coded = value_coded.blank? ? 'NULL' : value_coded
 
       
       if !concept_id.blank?
@@ -333,7 +333,7 @@ EOF
       
       else
         
-        concept_id = 'null'
+        concept_id = 'NULL'
       
       end
 
@@ -394,7 +394,7 @@ EOF
         
         encounter_type = HtsEncounterType.find_by_encounter_type_id(enc_type)
         
-        enc_type = encounter_type.blank? ? 'null' : encounter_type.encounter_type_id
+        enc_type = encounter_type.blank? ? 'NULL' : encounter_type.encounter_type_id
       
       end
 
@@ -437,34 +437,34 @@ def self.create_hts_client_registration_encounter
 
   patients.each do |patient|
 
-    obs_order_id = 'null'
+    obs_order_id = 'NULL'
 
     obs_datetime = Observation.find_by_person_id(patient['patient_id']).obs_datetime rescue
     nil
 
     obs_location_id = $location_id
       
-    obs_group_id = 'null'
+    obs_group_id = 'NULL'
       
     accession_number = ''
       
-    value_group_id = 'null'
+    value_group_id = 'NULL'
       
-    value_boolean = 'null'
+    value_boolean = 'NULL'
       
-    value_coded_name_id = 'null'
+    value_coded_name_id = 'NULL'
       
-    value_drug = 'null'
+    value_drug = 'NULL'
       
     value_datetime = ''
 
-    value_text = 'null'
+    value_text = 'NULL'
       
-    value_numeric = 'null'
+    value_numeric = 'NULL'
       
     value_modifier = ''
       
-    value_complex = 'null'
+    value_complex = 'NULL'
       
     comments = ''
      
@@ -476,11 +476,11 @@ def self.create_hts_client_registration_encounter
       
     voided = 0
       
-    obs_voided_by = 'null'
+    obs_voided_by = 'NULL'
       
     date_voided = ''
       
-    value_coded = 'null'
+    value_coded = 'NULL'
 
     patient_id = patient['patient_id']
 
@@ -488,11 +488,11 @@ def self.create_hts_client_registration_encounter
 
     encounter_type = HtsEncounterType.find_by_name("HTS CLIENT REGISTRATION").encounter_type_id
 
-    enc_form_id = 'null'
+    enc_form_id = 'NULL'
     
     enc_void_reason = ''
     
-    enc_changed_by = 'null'
+    enc_changed_by = 'NULL'
     
     enc_date_changed = ''
     

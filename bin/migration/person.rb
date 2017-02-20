@@ -374,7 +374,7 @@ EOF
 
     puts "Writing person attributes  |||||||||||||||||||||| #{person_attribute_id}"
 
-    person_attr_insert_sql = "(#{person_attribute_id},\"#{person_attribute_person_id}\,\"#{person_attribute_value}\","
+    person_attr_insert_sql = "(#{person_attribute_id},#{person_attribute_person_id},\"#{person_attribute_value}\","
     person_attr_insert_sql += "\"#{person_attribute_type_id}\",#{person_attribute_creator},\"#{person_attribute_date_created}\","
     person_attr_insert_sql += "#{person_attribute_changed_by},\"#{person_attribute_date_changed}\",\"#{person_attribute_voided}\","
     person_attr_insert_sql += "#{person_attribute_voided_by},\"#{person_attribute_date_voided}\",\"#{person_attribute_void_reason}\","
