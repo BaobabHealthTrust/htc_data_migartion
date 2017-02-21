@@ -209,53 +209,53 @@ EOF
 
     obs.each do |ob|
       
-      obs_id = ob['obs_id']
+      obs_id = ob['obs_id'].blank? ? 'NULL' : ob['obs_id']
       
       person_id = ob['person_id']
       
-      obs_order_id = ob['order_id']
+      obs_order_id = ob['order_id'].blank? ? 'NULL' : ob['order_id']
       
-      obs_datetime = ob['obs_datetime']
+      obs_datetime = ob['obs_datetime'].blank? ? 'NULL' : "\"#{ob['obs_datetime']}\""
       
       obs_location_id = $location_id
       
       obs_group_id = ob['obs_group_id'].blank? ? 'NULL' : ob['obs_group_id']
       
-      accession_number = ob['accession_number']
+      accession_number = ob['accession_number'].blank? ? 'NULL' : "\"#{ob['accession_number']}\""
       
       value_group_id = ob['value_group_id'].blank? ? 'NULL' : ob['value_group_id']
       
-      value_boolean = ob['value_boolean']
+      value_boolean = ob['value_boolean'].blank? ? 'NULL' : ob['value_boolean']
       
-      value_coded_name_id = ob['value_coded_name_id']
+      value_coded_name_id = ob['value_coded_name_id'].blank? ? 'NULL' : ob['value_coded_name_id']
       
       value_drug = ob['value_drug'].blank? ? 'NULL' : ob['value_drug']
       
-      value_datetime = ob['value_datetime']
+      value_datetime = ob['value_datetime'].blank? ? 'NULL' : "\"#{ob['value_datetime']}\""
       
-      value_numeric = ob['value_numeric']
+      value_numeric = ob['value_numeric'].blank? ? 'NULL' : ob['value_numeric']
       
-      value_modifier = ob['value_modifier']
+      value_modifier = ob['value_modifier'].blank? ? 'NULL' : ob['value_modifier']
       
-      value_text = ob['value_text']
+      value_text = ob['value_text'].blank? ? 'NULL' : "\"#{ob['value_text']}\""
       
-      value_complex = ob['value_complex']
+      value_complex = ob['value_complex'].blank? ? 'NULL' : "\"#{ob['value_complex']}\""
       
-      comments = ob['comments']
+      comments = ob['comments'].blank? ? 'NULL' : "\"#{ob['comments']}\""
       
       obs_creator = ob['creator']
       
-      date_created = ob['date_created']
+      date_created = ob['date_created'].blank? ? 'NULL' : "\"#{ob['date_created']}\""
       
       voided = ob['voided'] ? 1 : 0
       
       obs_voided_by = ob['voided_by']
       
-      date_voided = ob['date_voided']
+      date_voided = ob['date_voided'].blank? ? 'NULL' : "\"#{ob['date_voided']}\""
       
-      value_coded = ob['value_coded']
+      value_coded = ob['value_coded'].blank? ? 'NULL' : ob['value_coded']
       
-      concept_id = ob['concept_id']
+      concept_id = ob['concept_id'].blank? ? 'NULL' : ob['concept_id']
 
       
       if !value_coded_name_id.blank?
@@ -273,7 +273,7 @@ EOF
       
       if !obs_order_id.blank?
         
-        order_id = HtsOrder.find_by_order_id(obs_order_id)
+        order = HtsOrder.find_by_order_id(obs_order_id)
         
         obs_order_id = order.blank? ? 'NULL' : order.order_id
       
@@ -363,15 +363,15 @@ EOF
 
       if !concept_id.blank?
 
-        obs_sql =  "(\"#{obs_id}\",#{person_id},#{concept_id},#{enc_id},#{obs_order_id},\"#{obs_datetime}\","
+        obs_sql =  "(#{obs_id},#{person_id},#{concept_id},#{enc_id},#{obs_order_id},#{obs_datetime},"
         
-        obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
+        obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
         
-        obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
+        obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
         
-        obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
+        obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
         
-        obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+        obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
       
       end
 
@@ -442,11 +442,13 @@ def self.create_hts_client_registration_encounter
     obs_datetime = Observation.find_by_person_id(patient['patient_id']).obs_datetime rescue
     nil
 
+    obs_datetime = obs_datetime.blank? ? 'NULL' : "\"#{obs_datetime}\""
+
     obs_location_id = $location_id
       
     obs_group_id = 'NULL'
       
-    accession_number = ''
+    accession_number = 'NULL'
       
     value_group_id = 'NULL'
       
@@ -456,29 +458,31 @@ def self.create_hts_client_registration_encounter
       
     value_drug = 'NULL'
       
-    value_datetime = ''
+    value_datetime = 'NULL'
 
     value_text = 'NULL'
       
     value_numeric = 'NULL'
       
-    value_modifier = ''
+    value_modifier = 'NULL'
       
     value_complex = 'NULL'
       
-    comments = ''
+    comments = 'NULL'
      
     obs_creator = '1'
     
     date_created =
     Observation.find_by_person_id(patient['patient_id']).date_created rescue
-    nil #Date.today.strftime("%Y-%m-%d 00:00:00")
+    nil
+
+    date_created = date_created.blank? ? 'NULL' : "\"#{date_created}\""
       
     voided = 0
       
     obs_voided_by = 'NULL'
       
-    date_voided = ''
+    date_voided = 'NULL'
       
     value_coded = 'NULL'
 
@@ -490,7 +494,7 @@ def self.create_hts_client_registration_encounter
 
     enc_form_id = 'NULL'
     
-    enc_void_reason = ''
+    enc_void_reason = 'NULL'
     
     enc_changed_by = 'NULL'
     
@@ -514,15 +518,17 @@ def self.create_hts_client_registration_encounter
 
           value_text = "No"
 
+          value_text = "\"#{value_text}\""
+
           uuid = ActiveRecord::Base.connection.select_one <<EOF
                 select uuid()
 EOF
         
-          obs_sql =  "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-          obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-          obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-          obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-          obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+          obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
           
@@ -548,15 +554,17 @@ EOF
 
           end
 
+          value_text = "\"#{value_text}\""
+
           uuid = ActiveRecord::Base.connection.select_one <<EOF
                 select uuid()
 EOF
       
-          obs_sql =  "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-          obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-          obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-          obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-          obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+          obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
           
@@ -570,15 +578,17 @@ EOF
 
           value_text = "Other"
 
+          value_text = "\"#{value_text}\""
+
           uuid = ActiveRecord::Base.connection.select_one <<EOF
                 select uuid()
 EOF
       
-          obs_sql =  "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-          obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-          obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-          obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-          obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+          obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},\"#{date_voided}\","
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
@@ -595,14 +605,16 @@ EOF
           if !person_name.given_name.blank?
 
             value_text = person_name.given_name
+          
+            value_text = "\"#{value_text}\""
 
             concept_id = HtsConceptName.find_by_name('First name').concept_id
 
-            obs_sql = "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-            obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-            obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-            obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-            obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+            obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+            obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+            obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+            obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+            obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
@@ -621,14 +633,16 @@ EOF
           if !person_name.family_name.blank?
 
             value_text = person_name.family_name
+            
+            value_text = "\"#{value_text}\""
 
             concept_id = HtsConceptName.find_by_name('Last name').concept_id
 
-            obs_sql = "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-            obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-            obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-            obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-            obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+            obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+            obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+            obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+            obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+            obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
             
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
@@ -643,6 +657,8 @@ EOF
           person_birthdate = Person.find_by_person_id(patient_id).birthdate
 
           value_text = (Date.today.year - person_birthdate.to_date.year).to_i
+          
+          value_text = "\"#{value_text}\""
 
           concept_id = HtsConceptName.find_by_name('Age').concept_id
 
@@ -650,11 +666,11 @@ EOF
                 select uuid()
 EOF
             
-          obs_sql = "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-          obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-          obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-          obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-          obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+          obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
             
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
@@ -674,6 +690,8 @@ EOF
           person_birthdate = Person.find_by_person_id(patient_id).birthdate
          
           value_numeric = person_birthdate.to_date.year
+          
+          value_numeric = "\"#{value_numeric}\""
 
           concept_id = HtsConceptName.find_by_name('Year of Birth').concept_id
 
@@ -681,11 +699,11 @@ EOF
                 select uuid()
 EOF
             
-          obs_sql = "(\"#{obs_id}\",#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},\"#{obs_datetime}\","
-          obs_sql += "#{obs_location_id},#{obs_group_id},\"#{accession_number}\",#{value_group_id},\"#{value_boolean}\",#{value_coded},"
-          obs_sql += "#{value_coded_name_id},#{value_drug},\"#{value_datetime}\",\"#{value_numeric}\",\"#{value_modifier}\",\"#{value_text}\","
-          obs_sql += "\"#{}\",\"#{}\",\"#{comments}\",#{obs_creator},\"#{date_created}\",\"#{voided}\",#{obs_voided_by},\"#{date_voided}\","
-          obs_sql += "\"#{}\",\"#{value_complex}\",\"#{uuid.values.first}\"),"
+          obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
@@ -709,8 +727,8 @@ EOF
 
     encounter_sql = "(\"#{encounter_id}\",\"#{encounter_type}\",\"#{patient_id}\",\"#{provider}\",#{obs_location_id},"
     encounter_sql +=
-    "#{enc_form_id},\"#{obs_datetime}\",\"#{obs_creator}\",\"#{date_created}\",\"#{voided}\","
-    encounter_sql += "#{obs_voided_by},\"#{date_voided}\",\"#{enc_void_reason}\",\"#{uuid.values.first}\","
+    "#{enc_form_id},#{obs_datetime},#{obs_creator},#{date_created},#{voided},"
+    encounter_sql += "#{obs_voided_by},#{date_voided},\"#{enc_void_reason}\",\"#{uuid.values.first}\","
     encounter_sql += "#{enc_changed_by},\"#{enc_date_changed}\",\"#{patient_program_id}\"),"
 
 
