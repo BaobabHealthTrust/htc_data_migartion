@@ -1,3 +1,4 @@
+require 'io/console'
 Script_started_at = Time.now
 File_destination = '/home/pachawo/'
 
@@ -76,7 +77,7 @@ def start
   
   puts "Database password: "
 
-  db_pass = $stdin.gets.chomp
+  db_pass = $stdin.noecho(&:gets).chomp
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person.sql`
 

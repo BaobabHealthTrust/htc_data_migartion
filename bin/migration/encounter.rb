@@ -87,11 +87,27 @@ def start
   
   puts "...............please wait............"
   
-  obs_sql = File.read("#{File_destination}observations.sql")[0...-1]
+  obs_sql = File.read("#{File_destination}observations.sql")[0...-2]
   File.open("#{File_destination}observations.sql", "w") {|sql| sql.puts obs_sql << ";"}
 
   enc_sql = File.read("#{File_destination}encounters.sql")[0...-1]
   File.open("#{File_destination}encounters.sql", "w") {|sql| sql.puts enc_sql << ";"}
+
+  puts "Database username: "
+
+  db_user = $stdin.gets.chomp
+
+  puts "Destination database name: "
+
+  source_db = $stdin.gets.chomp
+  
+  puts "Database password: "
+
+  db_pass = $stdin.noecho(&:gets).chomp
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}encounters.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}observations.sql`
 
   puts "Script started at: #{Script_started_at} and ended at: #{Time.now}"
 
@@ -321,8 +337,21 @@ EOF
       value_coded = value_coded.blank? ? 'NULL' : value_coded
 
       value_text = HtsConceptName.find_by_concept_id(value_coded).name rescue nil
+      
 
-      value_text = value_text.blank? ? 'NULL' :"\"#{value_text}\""
+      if value_text.blank? && ob['value_text'].blank?
+
+          value_text = 'NULL'
+
+      elsif !ob['value_text'].blank?
+
+          value_text = "\"#{ob['value_text']}\""
+
+      else
+
+        value_text = "\"#{value_text}\""
+
+      end
 
       
       if !concept_id.blank?
@@ -518,7 +547,7 @@ def self.create_hts_client_registration_encounter
           
           concept_id = HtsConceptName.find_by_name("Sex/Pregnancy").concept_id
 
-          #>>>>>>>>>>> get patient sex <<<<<<<<<<<<<<<<<<<#
+          #>>>>>>>>>>> get patient gender <<<<<<<<<<<<<<<<<<<#
 
           sex = HtsPerson.find_by_person_id(patient_id).gender
 
@@ -695,6 +724,8 @@ EOF
 
           value_text = (Date.today.year - person_birthdate.to_date.year).to_i
           
+          $age = value_text
+
           value_text = "\"#{value_text}\""
 
           concept_id = HtsConceptName.find_by_name('Age').concept_id
@@ -704,11 +735,16 @@ EOF
 EOF
             
           obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          
           obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          
           obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          
           obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
             
+          
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
           puts "#{obs_sql}"
@@ -716,12 +752,49 @@ EOF
           obs_id = obs_id + 1
           
         when "Age Group"
-
           
-          obs_id = obs_id + 1    
-          puts "#{concept}?????????????#{obs_id}"
-          
+          concept_id = HtsConceptName.find_by_name('Age Group').concept_id
 
+          if $age < 1
+
+            value_text = "\"0-11 months\""
+
+          elsif 1 <= $age && $age <= 14
+
+            value_text = "\"1-14 years\""
+          
+          elsif 15 <= $age && $age <= 25
+
+            value_text = "\"15-25 years\""
+
+          elsif $age > 25
+
+            value_text = "\"25+ years\""
+
+          end
+          
+          uuid = ActiveRecord::Base.connection.select_one <<EOF
+                select uuid()
+EOF
+            
+          
+          obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          
+          obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          
+          obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          
+          obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          
+          obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
+            
+          
+          `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
+
+          puts "#{obs_sql}"
+            
+          obs_id = obs_id + 1
+          
         when "Year of Birth"
           
           person_birthdate = Person.find_by_person_id(patient_id).birthdate
@@ -776,10 +849,6 @@ EOF
     encounter_id = encounter_id + 1
 
   end
-
-
-
-  #Year of BirthAge GroupAgeLast nameFirst nameContact Detail TypeConsent given to be contacted?Sex/Pregnancy
 
 end
 
