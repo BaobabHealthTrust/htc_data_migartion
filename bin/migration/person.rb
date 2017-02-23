@@ -66,7 +66,34 @@ def start
   patient_prog_sql = File.read("#{File_destination}patient_program.sql")[0...-1]
   File.open("#{File_destination}patient_program.sql", "w") {|sql| sql.puts patient_prog_sql << ";"}
 
+  puts "Database username: "
+
+  db_user = $stdin.gets.chomp
+
+  puts "Destination database name: "
+
+  source_db = $stdin.gets.chomp
+  
+  puts "Database password: "
+
+  db_pass = $stdin.gets.chomp
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_name.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_address.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_attribute.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient.sql`
+
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient_identifier.sql`
+  
+  `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient_program.sql`
+
   puts "Script started at: #{Script_started_at} and ended at #{Time.now}"
+
 end
 
 def self.create_person
@@ -79,21 +106,36 @@ def self.create_person
           select uuid();
 EOF
 
-    person_id = person['person_id'].blank? ? 'null' : person['person_id']
-    person_gender = person['gender'].blank? ? 'null' : person['gender']
-    person_birthdate = person['birthdate'].blank? ? 'null' : person['birthdate']
+    person_id = person['person_id'].blank? ? 'NULL' : person['person_id']
+
+    person_gender = person['gender'].blank? ? 'NULL' : person['gender']
+    
+    person_birthdate = person['birthdate'].blank? ? 'NULL' : "\"#{person['birthdate']}\""
+    
     person_birthdate_estimated = person['birthdate_estimated'] ? 1 : 0
+    
     person_dead = person['dead'] ? 1 : 0
-    person_death_date = person['death_date'].blank? ? 'null' : person['death_date']
-    person_cause_of_death = person['cause_of_death'].blank? ? 'null' : person['cause_of_death']
-    person_date_changed = person['date_changed'].blank? ? 'null' : person['date_changed']
+    
+    person_death_date = person['death_date'].blank? ? 'NULL' : "\"#{person['death_date']}\""
+    
+    person_cause_of_death = person['cause_of_death'].blank? ? 'NULL' : "\"#{person['cause_of_death']}\""
+
+    person_date_changed = person['date_changed'].blank? ? 'NULL' : "\"#{person['date_changed']}\""
+
     person_changed_by = person['changed_by']
+
     person_creator = person['creator']
-    person_date_created = person['date_created'].blank? ? 'null' : person['date_created']
+    
+    person_date_created = person['date_created'].blank? ? 'NULL' : "\"#{person['date_created']}\""
+
     person_voided_by = person['voided_by']
+
     person_voided = person['voided'] ? 1 : 0
-    person_date_voided = person['date_voided'].blank? ? 'null' : person['date_voided']
-    person_voided_reason = person['void_reason'].blank? ? 'null' : person['void_reason']
+    
+    person_date_voided = person['date_voided'].blank? ? 'NULL' : "\"#{person['date_voided']}\""
+    
+    person_voided_reason = person['void_reason'].blank? ? 'NULL' : "\"#{person['void_reason']}\""
+
 
     if person_gender == "Male" || person_gender == "M"
 
@@ -106,44 +148,66 @@ EOF
     else
 
       person_gender = "Unknown"
+
     end
 
     if !person_creator.blank?
+
       creator = HtsUser.find_by_user_id(person['creator'])
+      
       person_creator = creator.blank? ? 1 : creator.user_id
+    
     else
-      person_creator = 'null'
+      
+      person_creator = 'NULL'
+    
     end
 
-
     if !person_changed_by.blank?
+
       changed_by = HtsUser.find_by_user_id(person['changed_by'])
+      
       person_changed_by = changed_by.blank? ? 1 : changed_by.user_id
+    
     else 
-      person_changed_by = 'null'
+      
+      person_changed_by = 'NULL'
+    
     end
 
     if !person_voided_by.blank?
+
       voided_by = HtsUser.find_by_user_id(person['voided_by'])
+      
       person_voided_by = voided_by.blank? ? 1 : voided_by.user_id
+    
     else 
-      person_voided_by = 'null'
+      
+      person_voided_by = 'NULL'
+    
     end
 
     puts "Writing person >>>>>>>>> #{person['person_id']}"
 
-    person_insert_sql = "(#{person_id},\"#{person_gender}\",\"#{person_birthdate}\",\"#{person_birthdate_estimated}\","
-    person_insert_sql += "\"#{person_dead}\",\"#{person_death_date}\",#{person_cause_of_death},#{person_creator},"
-    person_insert_sql += "\"#{person_date_created}\",#{person_changed_by},\"#{person_date_changed}\",\"#{person_voided}\","
-    person_insert_sql += "#{person_voided_by},\"#{person_date_voided}\",\"#{person_voided_reason}\",\"#{uuid.values.first}\"),"   
+    person_insert_sql = "(#{person_id},\"#{person_gender}\",#{person_birthdate},#{person_birthdate_estimated},"
+
+    person_insert_sql += "#{person_dead},#{person_death_date},#{person_cause_of_death},#{person_creator},"
+    
+    person_insert_sql += "#{person_date_created},#{person_changed_by},#{person_date_changed},#{person_voided},"
+    
+    person_insert_sql += "#{person_voided_by},#{person_date_voided},#{person_voided_reason},\"#{uuid.values.first}\"),"   
+
 
     person_exist = HtsPerson.find_by_person_id(person_id)
 
     if person_exist.blank?
+
       `echo -n '#{person_insert_sql}' >> #{File_destination}/person.sql`
+    
     end
 
   end
+
 end
 
 def self.create_person_name

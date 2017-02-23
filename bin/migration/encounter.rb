@@ -236,9 +236,7 @@ EOF
       value_numeric = ob['value_numeric'].blank? ? 'NULL' : ob['value_numeric']
       
       value_modifier = ob['value_modifier'].blank? ? 'NULL' : ob['value_modifier']
-      
-      value_text = ob['value_text'].blank? ? 'NULL' : "\"#{ob['value_text']}\""
-      
+       
       value_complex = ob['value_complex'].blank? ? 'NULL' : "\"#{ob['value_complex']}\""
       
       comments = ob['comments'].blank? ? 'NULL' : "\"#{ob['comments']}\""
@@ -321,6 +319,10 @@ EOF
       end
 
       value_coded = value_coded.blank? ? 'NULL' : value_coded
+
+      value_text = HtsConceptName.find_by_concept_id(value_coded).name rescue nil
+
+      value_text = value_text.blank? ? 'NULL' :"\"#{value_text}\""
 
       
       if !concept_id.blank?
@@ -516,18 +518,33 @@ def self.create_hts_client_registration_encounter
           
           concept_id = HtsConceptName.find_by_name("Sex/Pregnancy").concept_id
 
-          value_text = "No"
+          #>>>>>>>>>>> get patient sex <<<<<<<<<<<<<<<<<<<#
 
-          value_text = "\"#{value_text}\""
+          sex = HtsPerson.find_by_person_id(patient_id).gender
+
+
+          if sex == "M"
+
+            value_text = "\"M\""
+
+          else
+
+            value_text = "\"FNP\""
+
+          end
 
           uuid = ActiveRecord::Base.connection.select_one <<EOF
                 select uuid()
 EOF
         
           obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          
           obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          
           obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          
           obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
@@ -561,9 +578,13 @@ EOF
 EOF
       
           obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          
           obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          
           obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          
           obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+          
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
@@ -585,9 +606,13 @@ EOF
 EOF
       
           obs_sql =  "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+          
           obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+          
           obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+          
           obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},\"#{date_voided}\","
+          
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
@@ -610,12 +635,18 @@ EOF
 
             concept_id = HtsConceptName.find_by_name('First name').concept_id
 
+            
             obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+
             obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+            
             obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+            
             obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+            
             obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
+            
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
             puts "#{obs_sql}"
@@ -638,11 +669,17 @@ EOF
 
             concept_id = HtsConceptName.find_by_name('Last name').concept_id
 
+            
             obs_sql = "(#{obs_id},#{patient_id},#{concept_id},#{encounter_id},#{obs_order_id},#{obs_datetime},"
+            
             obs_sql += "#{obs_location_id},#{obs_group_id},#{accession_number},#{value_group_id},#{value_boolean},#{value_coded},"
+            
             obs_sql += "#{value_coded_name_id},#{value_drug},#{value_datetime},#{value_numeric},#{value_modifier},#{value_text},"
+            
             obs_sql += "NULL,NULL,#{comments},#{obs_creator},#{date_created},#{voided},#{obs_voided_by},#{date_voided},"
+            
             obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
+            
             
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
 
