@@ -1,6 +1,6 @@
 class HtsStock < ActiveRecord::Base
 
-  establish_conection :hts_inventory
+  establish_connection :hts_inventory
 
   self.table_name = "stock"
 

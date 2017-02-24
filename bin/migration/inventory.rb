@@ -16,16 +16,23 @@ def start
 
 	dispatch_inserts += "date_created,creator,date_changed,changed_by,voided,void_reason,date_voided,voided_by) VALUES "
 
+
+  consumption_inserts = "INSERT INTO consumption (consumption_type_id,dispatch_id,consumption_quantity,"
+
+  consumption_inserts += "who_consumed,date_consumed,reason_for_consumption,location,date_created,"
+
+  consumption_inserts += "creator,date_changed,changed_by,voided,voided_by,void_reason,date_voided) VALUES "
+
 	
-  `cd #{File_destination} && [ -f stock.sql ] && rm stock.sql && [ -f receipt.sql ] && rm receipt.sql && [ -f dispatch.sql ] && rm dispatch.sql`
-  
-  `touch stock.sql receipt.sql dispatch.sql`
+  `cd #{File_destination} && [ -f stock.sql ] && rm stock.sql && [ -f receipt.sql ] && rm receipt.sql && [ -f dispatch.sql ] && rm dispatch.sql && [ -f consumption.sql ] && rm consumption.sql && touch stock.sql receipt.sql dispatch.sql consumption.sql`
 	
   `echo -n '#{stock_inserts}' >> #{File_destination}/stock.sql`
 	
   `echo -n '#{receipt_inserts}' >> #{File_destination}/receipt.sql`
 	
   `echo -n '#{dispatch_inserts}' >> #{File_destination}/dispatch.sql`
+  
+  `echo -n '#{consumption_inserts}' >> #{File_destination}/consumption.sql`
 
 
 	
@@ -246,7 +253,7 @@ def self.create_dispatch
 		  puts "populating councillor_inventory table  ////////////////////// #{batch_number}"
       
       
-      councillor_inventory_insert_sql = "(#{dispatch_id},\"#{stock_id}\",#{batch_number},#{dispatch_quantity},"
+      councillor_inventory_insert_sql = "(#{dispatch_id},#{stock_id},#{batch_number},#{dispatch_quantity},"
 		  
       councillor_inventory_insert_sql += "#{dispatch_datetime},#{dispatch_who_dispatched},#{dispatch_who_received},"
 		  
@@ -255,6 +262,18 @@ def self.create_dispatch
       councillor_inventory_insert_sql += "#{creator},#{date_changed},#{changed_by},#{voided},#{void_reason},#{date_voided},#{voided_by}),"
 		  
       `echo -n '#{councillor_inventory_insert_sql}' >> #{File_destination}/dispatch.sql`
+
+    elsif inventory_type_name == "Usage"
+
+      puts "Writing consumption ............................"
+
+      consumption_sql = "#{inventory_type},dispatch_id,#{dispatch_quantity}, who_consumed,#{dispatch_datetime},reason_for_consumption,"
+
+      consumption_sql += "#{dispatch_destination},#{date_created},#{creator},#{date_changed},#{changed_by},#{voided},#{voided_by},"
+
+      consumption_sql += "#{void_reason},#{date_voided}),"
+
+      `echo -n '#{consumption_sql}' >> #{File_destination}/consumption.sql`
 
     end
 	
