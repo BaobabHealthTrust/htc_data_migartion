@@ -27,7 +27,9 @@ def start
   patient_identifier_sql =  "INSERT INTO patient_identifier (patient_identifier_id,patient_id,identifier,identifier_type,preferred,"
   patient_identifier_sql += "location_id,creator,date_created,voided,voided_by,date_voided,void_reason,uuid) VALUES "
 
-  `cd #{File_destination} && touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql patient_program.sql patient_identifier.sql`
+  `cd #{File_destination} && [ -f person.sql ] && rm person.sql && [ -f person_name.sql ] && rm person_name.sql && [ -f person_address.sql ] && rm person_address.sql && [ -f person_attribute.sql ] && rm person_attribute.sql && [ -f patient.sql ] && rm patient.sql && [ -f patient_program.sql ] && rm patient_program.sql && [ -f patient_identifier.sql ] && rm patient_identifier.sql`
+
+  `touch person.sql person_name.sql person_address.sql person_attribute.sql patient.sql patient_program.sql patient_identifier.sql`
   `echo -n '#{person_insert_statement}' >> #{File_destination}/person.sql`
   `echo -n '#{person_name_insert_statement}' >> #{File_destination}/person_name.sql`
   `echo -n '#{person_address_insert_statement}' >> #{File_destination}/person_address.sql`
@@ -67,30 +69,41 @@ def start
   patient_prog_sql = File.read("#{File_destination}patient_program.sql")[0...-1]
   File.open("#{File_destination}patient_program.sql", "w") {|sql| sql.puts patient_prog_sql << ";"}
 
-  puts "Database username: "
-
-  db_user = $stdin.gets.chomp
-
-  puts "Destination database name: "
-
-  source_db = $stdin.gets.chomp
+  db = YAML::load_file('config/database.yml')
   
-  puts "Database password: "
+  db_user = db['hts']['username']
 
-  db_pass = $stdin.noecho(&:gets).chomp
+  source_db = db['hts']['database']
+
+  db_pass = db['hts']['password']
+
+
+  puts "Loading person...................................."
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person.sql`
 
+  puts "Loading person name..............................."
+
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_name.sql`
+
+  puts "Loading person address............................"
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_address.sql`
 
+  puts "Loading person attributes........................."
+
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}person_attribute.sql`
+
+  puts "Loading patients.................................."
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient.sql`
 
+  puts "Loading patient identifier........................"
+
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient_identifier.sql`
   
+  puts "Loading patient programs.........................."
+
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}patient_program.sql`
 
   puts "Script started at: #{Script_started_at} and ended at #{Time.now}"

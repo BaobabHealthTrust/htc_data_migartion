@@ -73,7 +73,9 @@ def start
   encounter_sql_statement += "uuid,changed_by,date_changed,patient_program_id) VALUES "
 
 
-  `cd #{File_destination} && touch observations.sql encounters.sql`
+  `cd #{File_destination} && [ -f observations.sql ] && rm observations.sql && [ -f encounters.sql ] && rm encounters.sql`
+
+  `touch observations.sql encounters.sql`
 
   `echo -n '#{obs_sql_statement}' >> #{File_destination}/observations.sql`
   
@@ -93,19 +95,20 @@ def start
   enc_sql = File.read("#{File_destination}encounters.sql")[0...-1]
   File.open("#{File_destination}encounters.sql", "w") {|sql| sql.puts enc_sql << ";"}
 
-  puts "Database username: "
 
-  db_user = $stdin.gets.chomp
-
-  puts "Destination database name: "
-
-  source_db = $stdin.gets.chomp
+  db = YAML::load_file('config/database.yml')
   
-  puts "Database password: "
+  db_user = db['hts']['username']
 
-  db_pass = $stdin.noecho(&:gets).chomp
+  source_db = db['hts']['database']
+
+  db_pass = db['hts']['password']
+
+  puts "Loading encounters.................................."
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}encounters.sql`
+
+  puts "Loading observations................................"
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}observations.sql`
 
@@ -370,18 +373,26 @@ EOF
 
       
       if $encounter_map["PRE TEST COUNSELLING"].include? new_concept_name
+
+        puts "Writing pre test counselling encounter for .............................#{person_id}"
         
         enc_type = HtsEncounterType.find_by_name("PRE TEST COUNSELLING").encounter_type_id rescue nil
       
       elsif $encounter_map["POST TEST COUNSELLING"].include? new_concept_name
         
+        puts "Writing post test counselling encounter for..............................#{person_id}"
+        
         enc_type = HtsEncounterType.find_by_name("POST TEST COUNSELLING").encounter_type_id
       
       elsif $encounter_map["HTS CLIENT REGISTRATION"].include? new_concept_name
         
+        puts "Writing hts client registration encounter for..............................#{person_id}"
+        
         enc_type = HtsEncounterType.find_by_name("HTS CLIENT REGISTRATION").encounter_type_id
       
       elsif $encounter_map["HIV TESTING"].include? new_concept_name
+        
+        puts "Writing hiv testing encounter for............................................#{person_id}"
         
         enc_type = HtsEncounterType.find_by_name("HIV TESTING").encounter_type_id
       
@@ -390,7 +401,6 @@ EOF
       uuid = ActiveRecord::Base.connection.select_one <<EOF
             select uuid()
 EOF
-      puts "#{enc_id}...#{HtsEncounterType.find_by_encounter_type_id(enc_type).name rescue nil}>>>>>>>>#{ob['obs_id']}...#{concept_id}"
 
       if !concept_id.blank?
 
@@ -539,6 +549,8 @@ def self.create_hts_client_registration_encounter
           
     person_name = PersonName.find_by_person_id(patient_id)
 
+    puts "Writing hts client registration encounter for.................................#{patient_id}"
+
     concepts.each do |concept|
       
       case concept
@@ -578,8 +590,6 @@ EOF
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
           
-          puts "#{obs_sql}"
-          
           obs_id = obs_id + 1
 
         when "Consent given to be contacted?"      
@@ -618,8 +628,6 @@ EOF
 
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
           
-          puts "#{obs_sql}"
-          
           obs_id = obs_id + 1    
 
         when "Contact Detail Type"
@@ -645,8 +653,6 @@ EOF
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-          puts "#{obs_sql}"
 
           obs_id = obs_id + 1
 
@@ -677,8 +683,6 @@ EOF
           
             
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-            puts "#{obs_sql}"
             
             obs_id = obs_id + 1
 
@@ -711,8 +715,6 @@ EOF
             
             
             `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-            puts "#{obs_sql}"
             
             obs_id = obs_id + 1
 
@@ -746,8 +748,6 @@ EOF
             
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-          puts "#{obs_sql}"
             
           obs_id = obs_id + 1
           
@@ -790,8 +790,6 @@ EOF
             
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-          puts "#{obs_sql}"
             
           obs_id = obs_id + 1
           
@@ -816,16 +814,12 @@ EOF
           obs_sql += "NULL,#{value_complex},\"#{uuid.values.first}\"),"
           
           `echo '#{obs_sql}' >> #{File_destination}/observations.sql`
-
-          puts "#{obs_sql}"
             
           obs_id = obs_id + 1
           
       end 
 
-    puts obs_id.inspect
-
-    obs_id = obs_id + 1
+      obs_id = obs_id + 1
 
     end
     uuid = ActiveRecord::Base.connection.select_one <<EOF
@@ -836,14 +830,11 @@ EOF
     HtsPatientProgram.find_by_patient_id(patient_id).patient_program_id
 
     encounter_sql = "(\"#{encounter_id}\",\"#{encounter_type}\",\"#{patient_id}\",\"#{provider}\",#{obs_location_id},"
-    encounter_sql +=
-    "#{enc_form_id},#{obs_datetime},#{obs_creator},#{date_created},#{voided},"
+    encounter_sql += "#{enc_form_id},#{obs_datetime},#{obs_creator},#{date_created},#{voided},"
     encounter_sql += "#{obs_voided_by},#{date_voided},\"#{enc_void_reason}\",\"#{uuid.values.first}\","
     encounter_sql += "#{enc_changed_by},\"#{enc_date_changed}\",\"#{patient_program_id}\"),"
 
 
-    puts "#{encounter_sql}"
-      
     `echo -n '#{encounter_sql}' >> #{File_destination}/encounters.sql`
     
     encounter_id = encounter_id + 1
