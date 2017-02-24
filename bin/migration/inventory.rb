@@ -10,20 +10,31 @@ def start
 	receipt_inserts += "receipt_datetime, receipt_who_received, date_created, creator, date_changed changed_by, voided,"
 	receipt_inserts += "void_reason, date_voided, voided_by) VALUES"
 
-	dispatch_inserts  = "INSERT INTO receipt (dispatch_id, stock_id, batch_number, dispatch_quantity, dispatch_datetime,"
-	dispatch_inserts += "dispatch_who_dispatched, dispatch_who_received, dispatch_who_authorised, dispatch_destination,"
-	dispatch_inserts += "date_created, creator,	date_changed, changed_by, voided, void_reason,	date_voided voided_by,) VALUES"
+	dispatch_inserts  = "INSERT INTO receipt (dispatch_id,stock_id,batch_number,dispatch_quantity,dispatch_datetime,"
 
-	`cd #{File_destination} && touch stock.sql receipt.sql dispatch.sql`
-	`echo -n '#{stock_inserts}' >> #{File_destination}/stock.sql`
-	`echo -n '#{receipt_inserts}' >> #{File_destination}/receipt.sql`
-	`echo -n '#{dispatch_inserts}' >> #{File_destination}/dispatch.sql`
+	dispatch_inserts += "dispatch_who_dispatched,dispatch_who_received,dispatch_who_authorised,dispatch_destination,"
+
+	dispatch_inserts += "date_created,creator,date_changed,changed_by,voided,void_reason,date_voided,voided_by) VALUES "
+
+	
+  `cd #{File_destination} && [ -f stock.sql ] && rm stock.sql && [ -f receipt.sql ] && rm receipt.sql && [ -f dispatch.sql ] && rm dispatch.sql`
+  
+  `touch stock.sql receipt.sql dispatch.sql`
+	
+  `echo -n '#{stock_inserts}' >> #{File_destination}/stock.sql`
+	
+  `echo -n '#{receipt_inserts}' >> #{File_destination}/receipt.sql`
+	
+  `echo -n '#{dispatch_inserts}' >> #{File_destination}/dispatch.sql`
 
 
 	
-	self.create_stock
-	self.create_receipts
-	#self.create_dispatch
+	#self.create_stock
+	
+  #self.create_receipts
+	
+  self.create_dispatch
+
 end
 
 def self.create_stock
@@ -118,18 +129,15 @@ def self.create_stock
   stock_sql = File.read("#{File_destination}/stock.sql")[0...-1]
   File.open("#{File_destination}/stock.sql", "w") {|sql| sql.puts stock_sql << ";"}
 
-  puts "Database username: "
-
-  db_user = $stdin.gets.chomp
-
-  puts "Destination database name: "
-
-  source_db = $stdin.gets.chomp
+  db = YAML::load_file('config/database.yml')
   
-  puts "Database password: "
+  db_user = db['hts_inventory']['username']
 
-  db_pass = $stdin.gets.chomp
+  source_db = db['hts_inventory']['database']
 
+  db_pass = db['hts_inventory']['password']
+
+  puts "Loading stocks............................"
 
   `mysql -u '#{db_user}' -p#{db_pass} '#{source_db}' < #{File_destination}/stock.sql`
 
@@ -149,7 +157,7 @@ def self.create_receipts
 
 		expiry_date = inventory['date_of_expiry']
 
-		origin_facility = "null"
+		origin_facility = "NULL"
 
 		receipt_quantity = inventory['value_numeric']
 
@@ -194,49 +202,65 @@ def self.create_dispatch
 
 		dispatch_id = councillor_inventory['id']
 
-		stock_id = ""
+		batch_number = councillor_inventory['lot_no'].blank? ? 'NULL' : "\"#{councillor_inventory['lot_no']}\""
 
-		batch_number = councillor_inventory['lot_no']
+		dispatch_quantity = councillor_inventory['value_numeric'].blank? ? "NULL" : "\"#{councillor_inventory['value_numeric']}\""
 
-		dispatch_quantity = councillor_inventory['value_numeric']
-
-		dispatch_datetime = councillor_inventory['encounter_datetime']
+		dispatch_datetime = councillor_inventory['encounter_datetime'].blank? ? 'NULL' : "\"#{councillor_inventory['encounter_datetime']}\""
 
 		dispatch_who_dispatched = councillor_inventory['creator']
 
-		dispatch_who_received = ""
+		dispatch_who_received = "NULL"
 
-		dispatch_who_authorised = ""
+		dispatch_who_authorised = "NULL"
 
-		dispatch_destination = councillor_inventory['location_id']
+		dispatch_destination = councillor_inventory['location_id'].blank? ? 'NULL' : "\"#{councillor_inventory['location_id']}\""
 
-		date_created = councillor_inventory['created_at']
+		date_created = councillor_inventory['created_at'].blank? ? 'NULL' : "\"#{councillor_inventory['created_at']}\""
 
 		creator = councillor_inventory['creator']
 
-		date_changed = councillor_inventory['updated_at']
+		date_changed = councillor_inventory['updated_at'].blank? ? 'NULL' : "\"#{councillor_inventory['updated_at']}\""
 
-		changed_by = ""
+		changed_by = "NULL"
 
 		voided = "0"
 
-		void_reason =""
+		void_reason = "NULL"
 
-		date_voided = ""
+		date_voided = "NULL"
 
-		voided_by = ""
+		voided_by = "NULL"
 
+    inventory_type = councillor_inventory['inventory_type']
 
-		councillor_inventory_insert_sql = "(#{dispatch_id},\"#{stock_id}\",\"#{batch_number}\",\"#{dispatch_quantity}\","
-		councillor_inventory_insert_sql += "\"#{dispatch_datetime}\",\"#{dispatch_who_dispatched}\",\"#{dispatch_who_received}\","
-		councillor_inventory_insert_sql += "\"#{dispatch_who_authorised}\",\"#{dispatch_destination}\",\"#{date_created}\","
-		councillor_inventory_insert_sql += "\"#{creator}\",\"#{date_changed}\",\"#{changed_by}\",\"#{voided}\",\"#{void_reason}\",\"#{date_voided}\",\"voided_by}\"),"
+    inventory_type_name = InventoryType.find_by_id(inventory_type).name rescue nil
+
+    
+    if inventory_type_name == "Distribution"
+    
+      value_text = councillor_inventory['value_text']
+
+      stock_id = HtsStock.find_by_name(value_text).stock_id rescue nil
+
+		  puts "populating councillor_inventory table  ////////////////////// #{batch_number}"
+      
+      
+      councillor_inventory_insert_sql = "(#{dispatch_id},\"#{stock_id}\",#{batch_number},#{dispatch_quantity},"
+		  
+      councillor_inventory_insert_sql += "#{dispatch_datetime},#{dispatch_who_dispatched},#{dispatch_who_received},"
+		  
+      councillor_inventory_insert_sql += "#{dispatch_who_authorised},#{dispatch_destination},#{date_created},"
+		  
+      councillor_inventory_insert_sql += "#{creator},#{date_changed},#{changed_by},#{voided},#{void_reason},#{date_voided},#{voided_by}),"
+		  
+      `echo -n '#{councillor_inventory_insert_sql}' >> #{File_destination}/dispatch.sql`
+
+    end
 	
-		`echo -n '#{councillor_inventory_insert_sql}' >> #{File_destination}/dispatch.sql`
+  end
 
-		puts "populating councillor_inventory table  ////////////////////// #{batch_number}"
-
-	end
 end
+
 #self.create_stock
 start
