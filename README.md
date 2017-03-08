@@ -30,24 +30,24 @@ Things you may want to cover:
 
 * Database creation
 
-  1. Run rake:db create
+  1. Run **rake:db create**
 
 * How to run the migration
 
   1. Using your favourite editor open  person.rb located in bin/migration.
       Edit variable **File_destination** by providing path to which you want your
-      sql files reside after running the scripts. (e.g File_destination = '/home/pachawo/')
+      sql files reside after running the scripts. (e.g **File_destination = '/home/pachawo/'**)
       and save.
 
-  2. Do the same step 1 with the encounter.rb and inventory.rb located in the same folder, bin/migration.
+  2. Do the same step i with the encounter.rb and inventory.rb located in the same folder, bin/migration.
 
-  3. In you command line run, rails runner bin/migration/person.rb
+  3. In you command line run, **rails runner bin/migration/person.rb**
       (Used to transform and save data from HTC to hts)
 
-  4. Again run, rails runner bin/migration/encounter.rb 
+  4. Again run, **rails runner bin/migration/encounter.rb**
       (Used to transform and save data from HTC to hts).
 
-  5. To migrate inventory data run, rails runner bin/migration/inventory.rb
+  5. To migrate inventory data run, **rails runner bin/migration/inventory.rb**
       (..............Work still in progress......)
 
 * Services (job queues, cache servers, search engines, etc.)
