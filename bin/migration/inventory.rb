@@ -10,8 +10,6 @@ $db_pass = $db['hts_inventory']['password']
 
 def start
 
-  `cd ../hts/db && ./seed.js`
-
 	stock_inserts  = "INSERT INTO stock (stock_id, name, description, in_multiples_of, reorder_level," 
 	stock_inserts += "last_order_size, recommended_test_time, window_test_time, voided,void_reason, date_voided," 
 	stock_inserts += "voided_by, category_id, date_created, creator, date_changed, changed_by) VALUES"
