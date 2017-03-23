@@ -19,7 +19,7 @@
 
   2. Do the same step i with the encounter.rb and inventory.rb located in the same folder, bin/migration.
 
-  3. In you command line run, **rails runner migration-script-runner.sh** This script will run all the other scripts
+  3. In you command line run, **./ migration-script-runner.sh** This script will run all the other scripts
      (i.e the data transformation and data migration scripts).
 
 
